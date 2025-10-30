@@ -1,0 +1,91 @@
+Softlight Engineering Take-Home Assignment — Implementation Plan (Zero-Cost, Simple, Step-based)
+
+Goal: Deliver a working UI state capture agent with no paid services and minimal moving parts. It should navigate live apps, capture non-URL states (like modals and forms), and save an organized dataset for 3–5 tasks across 1–2 apps.
+
+Steps:
+
+1. Define scope, inputs, outputs, success
+- Scope: zero-cost stack, no cloud, no paid APIs, no LLMs. Local-only execution.
+- Inputs: task text (what to do), start URL, optional login session (stored cookies), optional keyword hints.
+- Outputs: ordered step folders per task with screenshot.png, page.html, dom_snapshot.json, aria_snapshot.json, action.json, meta.json; plus a task-level metadata.json.
+- Success: each workflow shows 3–8 meaningful UI states including at least one non-URL state (e.g., modal or form) and a completion/confirmation state.
+
+2. Choose the simplest free stack and layout
+- Tools: Node.js and Playwright (both free). No extra libraries unless built-in to Node.
+- Mode: headful Chromium so visual states are obvious; single CLI script for simplicity.
+- Repo layout: /scripts (runner), /dataset (outputs), /docs (Loom notes), README. Keep everything small and local.
+
+3. Implement a minimal Task Runner (CLI)
+- Accept: --task, --start-url, --out, --max-steps (default 10), --cookies (optional path for auth reuse).
+- Flow: open start URL; capture initial state; run a loop of propose->validate->act with simple heuristics; capture before/after each action; stop on success or max steps.
+- Persist: screenshots, HTML, DOM/ARIA snapshot, and metadata for each step; write metadata.json at task root.
+
+4. Use simple, deterministic action heuristics (no LLM)
+- Candidate discovery: query visible interactive elements (buttons, links, inputs, selects, role="button").
+- Text-first scoring: prefer elements whose innerText or aria-label matches generic verbs relevant across apps: create|new|add|filter|edit|settings|save|submit|next|continue|done|apply (case-insensitive).
+- Safety: ignore destructive verbs by default (delete|remove|archive) unless --allow-destructive is passed.
+- Validation: only click if element is visible, enabled, and in viewport; re-query right before acting.
+- Fallback exploration: if no verb match found, try opening visible menus/toggles (elements with aria-expanded, role=menu, chevrons) to surface hidden controls.
+
+5. Detect and capture non-URL states reliably
+- Trigger captures at:
+	- Before and after each action.
+	- On URL change.
+	- When a dialog/modal appears: detect via [role="dialog"], [aria-modal="true"], [data-modal], .modal.
+	- When a relevant element appears/disappears (target of last action).
+- Save both the full page and focused-element bounding box metadata to identify what changed.
+
+6. Keep change detection and dedupe dead simple
+- No image diff libraries. Use only:
+	- URL + document.title change.
+	- DOM mutation count via MutationObserver; treat >= N added+removed nodes (e.g., N=30) or modal appearance as a new state.
+	- A cheap DOM fingerprint (e.g., hash of textContent of the main body or role tree) using Node's built-in crypto.
+- If fingerprint unchanged from the previous capture, skip saving to reduce noise.
+
+7. Handle basic input/form workflows without app-specific code
+- On dialogs or forms, automatically:
+	- Fill the first few visible required inputs with safe placeholder values (e.g., "Test", "Example", "123").
+	- Select the first option from dropdowns when needed.
+	- Click primary "Create|Save|Submit|Done" buttons when present.
+- Capture after each field fill and after submit to record non-URL states.
+
+8. Authentication (free and simple)
+- Use the app's free-tier accounts. Log in manually once; export cookies (Playwright context storage) to a local JSON file.
+- Load cookies via --cookies on subsequent runs to avoid coding a login flow.
+
+9. Produce a clean dataset structure with blurbs
+- Structure per task:
+	- metadata.json: task, start_url, ts, settings, notes.
+	- step-001..N/: screenshot.png, page.html, dom_snapshot.json, aria_snapshot.json, action.json, meta.json.
+- Add a short README in /dataset describing each task in 1–2 sentences.
+
+10. Validate on 3–5 real tasks (free targets)
+- Suggested: Linear (free), Notion (free). Example tasks you can run with test workspaces:
+	- Linear: Create a project; Filter issues by status.
+	- Notion: Create a page; Add a filter to a database view.
+- Ensure at least one modal/form is captured for each app.
+
+11. Ship a tiny README and a one-liner CLI usage
+- README covers install (Node + Playwright), how to save/load cookies, how to run tasks, where outputs go, and Loom link.
+- Provide a single, copyable example command for each sample task.
+
+12. Record Loom (free) and package submission
+- Record a 3–5 minute Loom: run one task end-to-end and briefly explain the heuristics and non-URL capture.
+- Zip the /dataset folder and push the repo; email links per instructions.
+
+13. Optional niceties (still zero-cost, keep optional)
+- Add a simple HTML viewer that advances through step folders.
+- Add a --hints flag that accepts a comma-separated list of words to bias the verb matcher (still general, not hardcoded to apps).
+
+Requirements alignment (quick check)
+- Code: single-script CLI using Playwright, no paid deps. Meets generalization via verb/role heuristics and exploration.
+- Loom: short recording demonstrating a workflow and how non-URL states are captured.
+- Dataset: 3–5 tasks across 1–2 apps, per-task folders with ordered UI states and blurbs.
+- Non-URL states: captured via dialog detection, mutation thresholds, and before/after action snapshots.
+
+Notes and assumptions
+- Entire stack is free; Node and Playwright are sufficient on Windows.
+- Works headfully; stable on typical broadband. For flaky UIs, retries are limited and simple.
+- Avoid destructive actions by default for safety; use a flag to override if needed.
+
+End of plan.

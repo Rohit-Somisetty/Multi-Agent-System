@@ -1,0 +1,14 @@
+{
+  "name": "softlight-ui-capture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Zero-cost heuristic-based UI state capture with Playwright",
+  "scripts": {
+    "start": "node scripts/run_task.js",
+    "install:browsers": "playwright install"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
