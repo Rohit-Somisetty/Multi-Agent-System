@@ -1,6 +1,6 @@
 # Softlight UI State Capture
 
-Zero-cost, heuristic-based agent using Node.js + Playwright to navigate live web apps and capture UI states (including non-URL dialogues and forms).
+heuristic-based agent using Node.js + Playwright to navigate live web apps and capture UI states (including non-URL dialogues and forms).
 
 ## Features
 - Deterministic heuristics (verb/role matching)
