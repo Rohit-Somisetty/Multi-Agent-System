@@ -1,9 +1,8 @@
-# Softlight UI State Capture (Zero-Cost)
+# Softlight UI State Capture
 
-Zero-cost, heuristic-based agent using Node.js + Playwright to navigate live web apps and capture UI states (including non-URL dialogs and forms).
+Zero-cost, heuristic-based agent using Node.js + Playwright to navigate live web apps and capture UI states (including non-URL dialogues and forms).
 
 ## Features
-- No paid APIs or LLMs
 - Deterministic heuristics (verb/role matching)
 - Captures before/after actions, detects basic modals
 - Saves screenshot, HTML, DOM/ARIA snapshots, and metadata per step
